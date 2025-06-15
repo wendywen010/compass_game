@@ -84,7 +84,9 @@ button {
              background-size: cover;
              background-position: center;
              background-repeat: no-repeat;">
-<!-- <audio id="bgMusic" src="summer or autumn.mp3" loop></audio> -->
+<audio id="bgMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
+<audio id="correctSound" src="correct-6033.mp3"></audio>
+<audio id="wrongSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
 
 <h2>指南针方向匹配游戏 <br>Compass Direction Matching Game</h2>
 <p>拖动词语到正确方位，或点击按钮进入正式游戏！<br> Drag the word to the right direction</p>
@@ -101,9 +103,11 @@ button {
   <div id="gameControls" style="display:none;">
     <button onclick="toggleRotation()">开始 / 停止</button>
     <button onclick="checkDirection()">显示方向</button>
-    <button onclick="resetGame()">重新游戏</button>
+    
   </div>
 </div>
+
+<button onclick="resetPage()">重回主页</button>
 
 <!-- compass 区 -->
 <div class="compass">
@@ -164,18 +168,25 @@ function drop(ev) {
    
     if (target.id === draggedWord.innerText) {
       target.innerText = draggedWord.innerText;
+      document.getElementById("correctSound").play();
       target.classList.add("correct");
       draggedWord.remove();
+      checkCompletion();
     } else {
+      
+      document.getElementById("wrongSound").play();
       alert("放错位置啦！再试试！");
     }
   } else if (gameMode === "game") {
     let currentDirection = getDirection();
     if (target.id === currentDirection && target.id === draggedWord.innerText) {
       target.innerText = draggedWord.innerText;
+      document.getElementById("correctSound").play();
       target.classList.add("correct");
       draggedWord.remove();
+      checkVictory();
     } else {
+      document.getElementById("wrongSound").play();
       alert("必须放在当前指针所指的方位！");
     }
   }
@@ -185,12 +196,125 @@ function toggleRotation() {
   if (!rotating) {
     rotating = true;
     rotate();
-    // music.play();
+    document.getElementById("bgMusic").play();
   } else {
     rotating = false;
     cancelAnimationFrame(animationId);
-    // music.pause();
+    document.getElementById("bgMusic").pause();
   }
+}
+
+function checkVictory(){const remainingWords = document.querySelectorAll('.word[draggable="true"]');
+    if (remainingWords.length === 0) {
+        
+        const victoryMusic = new Audio('goodresult-82807.mp3'); // 准备一个胜利音效
+        victoryMusic.play();
+
+        setTimeout(() => {
+            alert("🎉 完美通关!你简直就是我的神！");
+            startGame();
+        }, 1500);
+    
+
+        // 金色粒子效果
+        createGoldenConfetti();
+        
+        // 优雅的弹窗提示
+        setTimeout(() => {
+            Swal.fire({
+                title: '完美通关!',
+                text: '所有练习都正确完成了！',
+                icon: 'success',
+                confirmButtonText: '开始正式游戏',
+                background: '#fff9e6',
+                backdrop: `
+                    rgba(255,215,0,0.4)
+                    url("https://media.giphy.com/media/xT0xezQGU5xCDJuCPe/giphy.gif")
+                    center top
+                    no-repeat
+                `
+            }).then(() => {
+                startGame();
+            });
+        }, 1000);
+    }
+}
+
+
+
+function checkCompletion() {
+    
+    const remainingWords = document.querySelectorAll('.word[draggable="true"]');
+    if (remainingWords.length === 0) {
+       
+        const victoryMusic = new Audio('goodresult-82807.mp3'); // 准备一个胜利音效
+        victoryMusic.play();
+
+        setTimeout(() => {
+            alert("🎉 完美！所有练习都完成了！\n准备开始正式游戏吧！");
+            resetPage();
+        }, 1500);
+    
+
+        // 金色粒子效果
+        createGoldenConfetti();
+        
+        // 优雅的弹窗提示
+        setTimeout(() => {
+            Swal.fire({
+                title: '完美通关!',
+                text: '所有练习都正确完成了！',
+                icon: 'success',
+                confirmButtonText: '开始正式游戏',
+                background: '#fff9e6',
+                backdrop: `
+                    rgba(255,215,0,0.4)
+                    url("https://media.giphy.com/media/xT0xezQGU5xCDJuCPe/giphy.gif")
+                    center top
+                    no-repeat
+                `
+            }).then(() => {
+                resetGame();
+                startGame();
+            });
+        }, 1000);
+    }
+}
+
+function createGoldenConfetti() {
+    const colors = ['#FFD700', '#FFC600', '#FFDF00', '#FFEE00'];
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 3000);
+    }
+    
+   
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .confetti {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            top: -10px;
+            z-index: 999;
+            animation: fall 3s linear forwards;
+            opacity: 0.8;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 function rotate() {
@@ -216,21 +340,96 @@ function checkDirection() {
   let dir = getDirection();
   document.getElementById("result").innerText = "当前指针方向：" + dir;
 }
+
+function checkAnswer() {
+  const currentCategory = getCurrentCategory();
+  document.getElementById("result").innerHTML = `
+    <p>当前指针指向: <strong>${currentCategory}</strong></p>
+    <p>你的得分: <strong>${score}</strong></p>
+  `;
+}
+
 function warmUp() {
   gameMode = "warmup";
   alert("练习模式：请把词语拖动到匹配的方位！");
-
   document.getElementById("warmupControls").style.display = "block";
   document.getElementById("gameControls").style.display = "none";
+  
 }
+
+
 function startGame() {
-  gameMode = "game";
-  alert("正式游戏：现在只能拖动指针当前方向的词语到相应方位！");
-  document.getElementById("warmupControls").style.display = "none";
-  document.getElementById("gameControls").style.display = "block";
+    
+    
+    gameMode = "game";
+    gameMode.isCompleted = false;
+    
+  
+    // generateGameWords();  // 
+    
+    document.getElementById("warmupControls").style.display = "none";
+    document.getElementById("gameControls").style.display = "block";
+    
+  
+    resetNeedle();
 }
 
 function resetGame() {
+  // Clear all words
+  const wordsContainer = document.querySelector('.words');
+  wordsContainer.innerHTML = '';
+  
+  // Clear drop zones
+  document.querySelectorAll('.drop-zone').forEach(zone => {
+    zone.innerHTML = '';
+    zone.classList.remove('correct');
+  });
+  
+  // Reset needle
+  gameState.angle = 0;
+  document.getElementById("needle").style.transform = `rotate(${gameState.angle}deg)`;
+  
+  // Stop music
+  document.getElementById("bgMusic").pause();
+  document.getElementById("bgMusic").currentTime = 0;
+}
+    
+    // gameMode.score = 0;
+    // updateScoreDisplay();
+    
+    // // 重新生成单词元素
+    // generateGameWords();
+
+
+
+
+
+// function generateGameWords() {
+//     
+//     const wordsContainer = document.querySelector('.words');
+//     const gameWords = ["东", "南", "西", "北", "东北", "东南", "西南", "西北"];
+    
+//     gameWords.forEach(word => {
+//         const wordElement = document.createElement('div');
+//         wordElement.className = 'word';
+//         wordElement.id = word;
+//         wordElement.textContent = word;
+//         wordElement.setAttribute('draggable', 'true');
+//         wordElement.addEventListener('dragstart', drag);
+//         wordsContainer.appendChild(wordElement);
+//     });
+// }
+
+function resetNeedle() {
+    angle = 0;
+    document.getElementById("needle").style.transform = `rotate(${angle}deg)`;
+    if (rotating) {
+        toggleRotation(); // 先停止旋转
+        toggleRotation(); // 重新开始旋转
+    }
+}
+
+function resetPage() {
   location.reload();
 }
 </script>
