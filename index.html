@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>指南针方向匹配游戏</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+
+
+    .compass { 
+      display: grid; 
+      grid-template-columns: 100px 100px 100px; 
+      grid-gap: 10px; 
+      justify-content: center; 
+      margin: 15px auto; 
+      position: relative;
+    }
+
+    .compass div { 
+  border: 2px dashed #ccc;  
+  width: 60px; 
+  height: 60px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  border-radius: 50%;
+  font-size: 16px;
+  line-height: 60px; /* 行高和高度一致 */
+  text-align: center;
+}
+
+    .compass div.correct { 
+      background: #f7f1c5; 
+      border-color: #a7ae27; 
+    }
+
+    .words { margin-top: 30px; }
+
+    .word {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background: #f0f0f0;
+      margin: 5px;
+      border: 1px solid #ccc;
+      cursor: grab;
+      border-radius: 50%;
+      font-size: 16px;
+    }
+
+    #needle { 
+      position: absolute;
+    top: 5%;
+    left: 47%;
+    width: 4px;
+    height: 45px;
+    background: rgb(93, 0, 255);
+    transform-origin: bottom center;
+    transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    #controls button {
+      margin: 5px;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+button {
+  width: 120px;
+  height: 60px;
+  border-radius: 80%;
+  border: none;
+  background-color: #dbb734;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+  </style>
+</head>
+
+<body style="background-image: url('background_compass.png'); 
+             background-size: cover;
+             background-position: center;
+             background-repeat: no-repeat;">
+<!-- <audio id="bgMusic" src="summer or autumn.mp3" loop></audio> -->
+
+<h2>指南针方向匹配游戏 <br>Compass Direction Matching Game</h2>
+<p>拖动词语到正确方位，或点击按钮进入正式游戏！<br> Drag the word to the right direction</p>
+
+<!-- 控制区 -->
+<div id="controls">
+  <!-- 练习模式 -->
+  <div id="warmupControls">
+    <button onclick="warmUp()">练习模式</button>
+    <button onclick="startGame()">开始正式游戏</button>
+  </div>
+
+  <!-- 正式游戏控制，默认隐藏 -->
+  <div id="gameControls" style="display:none;">
+    <button onclick="toggleRotation()">开始 / 停止</button>
+    <button onclick="checkDirection()">显示方向</button>
+    <button onclick="resetGame()">重新游戏</button>
+  </div>
+</div>
+
+<!-- compass 区 -->
+<div class="compass">
+  <div id="西北" ondrop="drop(event)" ondragover="allowDrop(event)">西北</div>
+  <div id="北" ondrop="drop(event)" ondragover="allowDrop(event)">北</div>
+  <div id="东北" ondrop="drop(event)" ondragover="allowDrop(event)">东北</div>
+  <div id="西" ondrop="drop(event)" ondragover="allowDrop(event)" style="padding-top:5px;" width: 60px; 
+      height: 40px;>西</div>
+
+  <div style="position: relative; width: 100px; height: 100px;margin-left: -15px">
+    <img src="compass.jpeg" alt="指南针" style="width:90px; border-radius:50%;">
+    <div id="needle"></div>
+  </div>
+
+  <div id="东" ondrop="drop(event)" ondragover="allowDrop(event)" style="padding-top:5px;" width: 60px; 
+      height: 40px;>东</div>
+  <div id="西南" ondrop="drop(event)" ondragover="allowDrop(event)">西南</div>
+  <div id="南" ondrop="drop(event)" ondragover="allowDrop(event)">南</div>
+  <div id="东南" ondrop="drop(event)" ondragover="allowDrop(event)">东南</div>
+</div>
+
+<!-- 拖拽词汇区 -->
+<div class="words">
+  <div id="word1" class="word" draggable="true" ondragstart="drag(event)">东</div>
+  <div id="word2" class="word" draggable="true" ondragstart="drag(event)">南</div>
+  <div id="word3" class="word" draggable="true" ondragstart="drag(event)">西</div>
+  <div id="word4" class="word" draggable="true" ondragstart="drag(event)">北</div>
+  <div id="word5" class="word" draggable="true" ondragstart="drag(event)">东北</div>
+  <div id="word6" class="word" draggable="true" ondragstart="drag(event)">东南</div>
+  <div id="word7" class="word" draggable="true" ondragstart="drag(event)">西南</div>
+  <div id="word8" class="word" draggable="true" ondragstart="drag(event)">西北</div>
+</div>
+
+<!-- 显示结果 -->
+<div id="result" style="margin-top:20px;"></div>
+
+<script>
+let rotating = false;
+let angle = 0;
+let animationId;
+let gameMode = "warmup"; // 初始模式
+
+function allowDrop(ev) {
+  ev.preventDefault();
+}
+
+function drag(ev) {
+  ev.dataTransfer.setData("text", ev.target.id);
+}
+
+function drop(ev) {
+  ev.preventDefault();
+  let data = ev.dataTransfer.getData("text");
+  let draggedWord = document.getElementById(data);
+  let target = ev.target;
+
+  if (gameMode === "warmup") {
+   
+    if (target.id === draggedWord.innerText) {
+      target.innerText = draggedWord.innerText;
+      target.classList.add("correct");
+      draggedWord.remove();
+    } else {
+      alert("放错位置啦！再试试！");
+    }
+  } else if (gameMode === "game") {
+    let currentDirection = getDirection();
+    if (target.id === currentDirection && target.id === draggedWord.innerText) {
+      target.innerText = draggedWord.innerText;
+      target.classList.add("correct");
+      draggedWord.remove();
+    } else {
+      alert("必须放在当前指针所指的方位！");
+    }
+  }
+}
+let music = document.getElementById("bgMusic");
+function toggleRotation() {
+  if (!rotating) {
+    rotating = true;
+    rotate();
+    // music.play();
+  } else {
+    rotating = false;
+    cancelAnimationFrame(animationId);
+    // music.pause();
+  }
+}
+
+function rotate() {
+  angle = (angle + 2) % 360;
+  document.getElementById("needle").style.transform = `rotate(${angle}deg)`;
+  if (rotating) {
+    animationId = requestAnimationFrame(rotate);
+  }
+}
+
+function getDirection() {
+  if (angle >= 337.5 || angle < 22.5) return "北";
+  if (angle >= 22.5 && angle < 67.5) return "东北";
+  if (angle >= 67.5 && angle < 112.5) return "东";
+  if (angle >= 112.5 && angle < 157.5) return "东南";
+  if (angle >= 157.5 && angle < 202.5) return "南";
+  if (angle >= 202.5 && angle < 247.5) return "西南";
+  if (angle >= 247.5 && angle < 292.5) return "西";
+  if (angle >= 292.5 && angle < 337.5) return "西北";
+}
+
+function checkDirection() {
+  let dir = getDirection();
+  document.getElementById("result").innerText = "当前指针方向：" + dir;
+}
+function warmUp() {
+  gameMode = "warmup";
+  alert("练习模式：请把词语拖动到匹配的方位！");
+
+  document.getElementById("warmupControls").style.display = "block";
+  document.getElementById("gameControls").style.display = "none";
+}
+function startGame() {
+  gameMode = "game";
+  alert("正式游戏：现在只能拖动指针当前方向的词语到相应方位！");
+  document.getElementById("warmupControls").style.display = "none";
+  document.getElementById("gameControls").style.display = "block";
+}
+
+function resetGame() {
+  location.reload();
+}
+</script>
+
+</body>
+</html>
